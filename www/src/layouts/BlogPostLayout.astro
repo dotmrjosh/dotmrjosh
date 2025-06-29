@@ -1,0 +1,73 @@
+---
+import "@styles/global.css";
+import "@fontsource-variable/gabarito";
+
+import Foot from "@components/Foot.astro";
+import Grain from "@components/Grain.astro";
+
+type Props = {
+  title: string;
+  class?: string;
+};
+
+const { title, class: classes } = Astro.props;
+
+const description = "The coner of the internet that's looked after by dotmrjosh";
+const image = {
+  src: "",
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Global Metadata -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image.src, Astro.url)} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={Astro.url} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image.src, Astro.url)} />
+  </head>
+  <body>
+    <div class:list={["relative flex justify-center isolate overflow-x-clip dark:bg-zinc-800 min-h-screen dark:text-white", classes]}>
+      <Grain />
+      <div class="max-w-4xl w-full px-7 lg:px-0">
+        <header class="py-4 lg:py-7">
+          <h1>
+            <a class="text-7xl text-zinc-400 hover:text-black dark:text-zinc-600 dark:hover:text-white transition-colors" href="/"
+              >dotmrjosh</a
+            >
+          </h1>
+        </header>
+        <div class="truncate">
+          <a class="text-zinc-400 hover:text-black dark:text-zinc-600 dark:hover:text-white transition-colors" href="/blog">blog</a>
+          <span>/</span>
+          <span>{title}</span>
+        </div>
+        <main class="z-10 mt-14">
+          <slot />
+        </main>
+        <Foot />
+      </div>
+    </div>
+  </body>
+</html>
