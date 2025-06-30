@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 
+import react from "@astrojs/react";
+
 // import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
@@ -13,6 +15,12 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-  integrations: [sitemap(), mdx()],
+  integrations: [
+    sitemap(),
+    mdx(),
+    react({
+      include: ["**/react/*"],
+    }),
+  ],
   // adapter: cloudflare(),
 });

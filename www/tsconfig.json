@@ -6,10 +6,12 @@
     "strictNullChecks": true,
     "baseUrl": "./src",
     "paths": {
-        "@assets/*": ["assets/*"],
-        "@components/*": ["components/*"],
-        "@layouts/*": ["layouts/*"],
-        "@styles/*": ["styles/*"]
-    }
+      "@assets/*": ["assets/*"],
+      "@components/*": ["components/*"],
+      "@layouts/*": ["layouts/*"],
+      "@styles/*": ["styles/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   }
 }
