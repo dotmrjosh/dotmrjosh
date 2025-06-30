@@ -9,7 +9,7 @@ const { frequency = 1.4, mode = "multiply" } = Astro.props;
 
 <svg
   xmlns="http://www.w3.org/2000/svg"
-  class="pointer-events-none absolute inset-0 size-full grayscale not-dark:opacity-40 opacity-70"
+  class="grain pointer-events-none absolute inset-0 size-full grayscale not-dark:opacity-40 opacity-70"
   preserveAspectRatio="none"
   style={{ "mix-blend-mode": mode }}
 >
@@ -18,3 +18,14 @@ const { frequency = 1.4, mode = "multiply" } = Astro.props;
   </filter>
   <rect width="100%" height="100%" filter="url(#noiseFilter)"></rect>
 </svg>
+
+<script type="module">
+  const isIOSDevice = ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(navigator.platform);
+
+  if (isIOSDevice) {
+    // For some reason safari can't properly mix-blend on mobile devices
+    document.querySelectorAll("svg.grain").forEach((el) => {
+      el.style.opacity = 0;
+    });
+  }
+</script>
