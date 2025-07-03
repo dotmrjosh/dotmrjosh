@@ -11,18 +11,26 @@ import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
-    site: "https://dotmrjosh.dev",
-    vite: {
-        plugins: [tailwindcss()],
+  site: "https://dotmrjosh.dev",
+  vite: {
+    plugins: [tailwindcss()],
+    resolve: {
+      alias: import.meta.env.PROD
+        ? {
+            "react-dom/server": "react-dom/server.edge",
+          }
+        : undefined,
     },
-    integrations: [
-        sitemap(),
-        mdx(),
-        react({
-            include: ["**/react/*"],
-        }),
-    ],
-    adapter: cloudflare({
-        imageService: "compile",
+  },
+  integrations: [
+    sitemap(),
+    mdx(),
+    react({
+      include: ["**/react/*"],
     }),
+  ],
+  output: "server",
+  adapter: cloudflare({
+    imageService: "compile",
+  }),
 });
