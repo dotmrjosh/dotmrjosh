@@ -75,26 +75,28 @@ for (let i = 0; i < 140; i++) {
   <mask id="tileMask" mask-type="luminace">
     {
       tiles.map(([_, contribs], index) => {
-        const row = Math.floor(index / 7);
-        const col = index % 7;
+        const row = Math.floor((tiles.length - 1 - index) / 7);
+        const col = 6 - (index % 7);
         const y = col * (14 + 4);
         const x = row * (14 + 4);
 
         return (
-          <rect
-            class="animate-fadein"
-            x={x}
-            y={y}
-            width={14}
-            height={14}
-            rx={4}
-            ry={4}
-            fill="white"
-            style={{
-              "animation-delay": `${BASE_DELAY + index * (Math.random() * 7)}ms`,
-              "fill-opacity": `${Math.max(14, Math.min(contribs, 100))}%`,
-            }}
-          />
+          <>
+            <rect
+              class="animate-fadein"
+              x={x}
+              y={y}
+              width={14}
+              height={14}
+              rx={4}
+              ry={4}
+              fill="white"
+              style={{
+                "animation-delay": `${BASE_DELAY + index * (Math.random() * 7)}ms`,
+                "fill-opacity": `${Math.max(7, Math.min(contribs, 100))}%`,
+              }}
+            />
+          </>
         );
       })
     }
