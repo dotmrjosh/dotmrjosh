@@ -1,13 +1,25 @@
 ---
+import { getCollection } from "astro:content";
 import DefaultLayout from "@layouts/DefaultLayout.astro";
+
+const postsCount = (await getCollection("blog")).length;
 ---
 
 <DefaultLayout class="flex w-full justify-center">
   <div class="prose prose-zinc dark:prose-invert">
-    <h2>Hey there...</h2>
+    <strong>Hey there...</strong>
     <p>Welcome to my little corner of the internet. Here you can see some insider info and learn about my process when making things.</p>
     <p>
       There's not much here yet, but maybe if I get into a routine of posting things you'll see more appear in the <a href="/blog">blog</a>.
     </p>
+  </div>
+  <div class="my-4" role="separator"></div>
+  <h2 class="text-xl">Stats</h2>
+  <div class="flex bg-zinc-900 text-white py-2 px-4 rounded shadow-inner justify-between">
+    <div class="mt-1">
+      <p>Blog Posts: {postsCount}</p>
+      <p class="opacity-40 text-xs">idk what else to add lol</p>
+    </div>
+    <img class="max-w-sm" src="/og/activity.svg?bg=0" />
   </div>
 </DefaultLayout>
