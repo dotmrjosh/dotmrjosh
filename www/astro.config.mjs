@@ -7,20 +7,22 @@ import sitemap from "@astrojs/sitemap";
 
 import react from "@astrojs/react";
 
-// import cloudflare from "@astrojs/cloudflare";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://dotmrjosh.dev",
-  vite: {
-    plugins: [tailwindcss()],
-  },
-  integrations: [
-    sitemap(),
-    mdx(),
-    react({
-      include: ["**/react/*"],
+    site: "https://dotmrjosh.dev",
+    vite: {
+        plugins: [tailwindcss()],
+    },
+    integrations: [
+        sitemap(),
+        mdx(),
+        react({
+            include: ["**/react/*"],
+        }),
+    ],
+    adapter: cloudflare({
+        imageService: "compile",
     }),
-  ],
-  // adapter: cloudflare(),
 });
