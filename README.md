@@ -2,4 +2,6 @@
 
 I make cool things sometimes.
 
-<img src="https://dotmrjosh.dev/og/activity.svg" alt="activity" width="500" />
+## Stats
+
+<img src="https://dotmrjosh.dev/og/activity.svg?bg=0" alt="activity" width="500" />
