@@ -1,0 +1,26 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+
+  type Props = { frequency?: number; mode?: "normal" | "multiply" | "luminosity" };
+  let { frequency = 1.4, mode = "multiply" }: Props = $props();
+
+  let mitigate = $state(false);
+  onMount(() => {
+    const isIOSDevice = ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(navigator.platform);
+
+    // For some reason safari can't properly mix-blend on mobile devices
+    if (isIOSDevice) mitigate = true;
+  });
+</script>
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  class={["grain pointer-events-none absolute inset-0 size-full opacity-70 grayscale not-dark:opacity-40", mitigate && "opacity-0!"]}
+  preserveAspectRatio="none"
+  style:mix-blend-mode={mode}
+>
+  <filter id="noiseFilter">
+    <feTurbulence type="fractalNoise" baseFrequency={frequency} numOctaves="2" stitchTiles="stitch"></feTurbulence>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noiseFilter)"></rect>
+</svg>

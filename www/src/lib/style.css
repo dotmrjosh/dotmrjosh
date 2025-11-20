@@ -2,5 +2,5 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Gabarito Variable", system-ui;
+  --default-font-family: "Gabarito Variable", system-ui;
 }
