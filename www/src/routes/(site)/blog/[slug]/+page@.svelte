@@ -1,8 +1,13 @@
 <script lang="ts">
   import Foot from "$lib/components/Foot.svelte";
+  import Meta from "$lib/components/Meta.svelte";
 
   let { data } = $props();
 </script>
+
+<svelte:head>
+  <Meta title={data.post.metadata.title} description={data.post.metadata.description} />
+</svelte:head>
 
 <div class="truncate">
   <a class="text-zinc-400 transition-colors hover:text-black dark:text-zinc-600 dark:hover:text-white" href="/blog">blog</a>
