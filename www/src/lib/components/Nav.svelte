@@ -20,7 +20,7 @@
       {n.label}
     </a>
   {/each}
-  <div class="mt-7">
+  <div class="md:mt-7">
     <p>socials</p>
   </div>
   {#each socials as s}
