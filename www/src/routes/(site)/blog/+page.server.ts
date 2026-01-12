@@ -1,10 +1,10 @@
 import type { PageServerLoad } from "./$types";
 import type { PostModule } from "$lib/blog";
 
-const posts = import.meta.glob<PostModule>("/src/blog/*", { eager: true });
+const posts = import.meta.glob<PostModule>("/src/blog/*/post.mdx", { eager: true });
 const entries = Object.entries(posts)
   .map(([path, post]) => {
-    const slug = path.split("/").at(-1)!.split(".").slice(0, -1).join(".");
+    const slug = path.split("/").at(-2)!;
     return [
       new Date(slug),
       {

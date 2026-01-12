@@ -4,7 +4,7 @@
 
   let { href, children, ...restProps }: HTMLAnchorAttributes & { children: Snippet } = $props();
 
-  const isExternal = $derived(!href?.startsWith("/"));
+  const isExternal = $derived(href?.startsWith("http://"));
   const target = $derived(isExternal ? "_blank" : undefined);
 </script>
 

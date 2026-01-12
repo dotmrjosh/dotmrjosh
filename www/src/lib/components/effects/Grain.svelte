@@ -15,7 +15,7 @@
 
 <svg
   xmlns="http://www.w3.org/2000/svg"
-  class={["grain pointer-events-none fixed inset-0 size-full opacity-70 grayscale not-dark:opacity-40", mitigate && "opacity-0!"]}
+  class={["grain pointer-events-none fixed inset-0 size-full opacity-70 grayscale", mitigate && "opacity-0!"]}
   preserveAspectRatio="none"
   style:mix-blend-mode={mode}
 >

@@ -14,18 +14,22 @@
   ];
 </script>
 
-<nav class="flex gap-7 md:flex-col md:gap-1">
-  {#each nav as n}
-    <a class="text-zinc-400 transition-colors hover:text-black dark:text-zinc-600 dark:hover:text-white" href={n.href} target={n.target}>
-      {n.label}
-    </a>
-  {/each}
-  <div class="md:mt-7">
-    <p>socials</p>
+<nav class="flex flex-wrap gap-2 md:flex-col md:gap-1">
+  <div class="flex gap-2">
+    {#each nav as n}
+      <a class="transition-colors text-zinc-600 hover:text-white" href={n.href} target={n.target}>
+        {n.label}
+      </a>
+    {/each}
   </div>
-  {#each socials as s}
-    <a class="text-zinc-400 transition-colors hover:text-black dark:text-zinc-600 dark:hover:text-white" href={s.href} target={s.target}>
-      {s.label}
-    </a>
-  {/each}
+  <div class="max-md:basis-full md:flex-col gap-2 flex">
+    <div class="md:mt-7">
+      <p>socials:</p>
+    </div>
+    {#each socials as s}
+      <a class="transition-colors text-zinc-600 hover:text-white" href={s.href} target={s.target}>
+        {s.label}
+      </a>
+    {/each}
+  </div>
 </nav>

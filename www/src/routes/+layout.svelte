@@ -12,12 +12,12 @@
   <link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="relative isolate flex min-h-screen justify-center overflow-x-clip dark:bg-zinc-800 dark:text-white">
+<div class="relative isolate flex min-h-screen justify-center overflow-x-clip bg-zinc-800 text-white">
   <Grain />
   <div class="min-h-screen w-full max-w-4xl px-7 lg:px-0">
     <header class="py-4 lg:py-7">
       <h1>
-        <a class="text-7xl text-zinc-400 transition-colors hover:text-black dark:text-zinc-600 dark:hover:text-white" href="/">dotmrjosh</a>
+        <a class="text-7xl transition-colors text-zinc-600 hover:text-white" href="/">dotmrjosh</a>
       </h1>
     </header>
     {@render children()}

@@ -1,0 +1,537 @@
+---
+title: "grave robbing tomotoru"
+description: "a cute game you'll never get to play"
+---
+
+<script>
+  import "$lib/prism-themes/prism-laserwave.css";
+  import { onMount } from "svelte";
+
+  import environment from "/src/blog/2026-01-12/3d/environment.hdr?url";
+  import faceA from "/src/blog/2026-01-12/3d/face_a.glb?url";
+  import faceB from "/src/blog/2026-01-12/3d/face_b.glb?url";
+  import faceC from "/src/blog/2026-01-12/3d/face_c.glb?url";
+  import room from "/src/blog/2026-01-12/3d/room.glb?url";
+
+  import bubbleQuestion from "/src/blog/2026-01-12/img/bubble_question.png?url";
+  import cinnamoroll from "/src/blog/2026-01-12/img/cinnamoroll.png?url";
+  import kitty from "/src/blog/2026-01-12/img/kitty.png?url";
+  import melody from "/src/blog/2026-01-12/img/melody.png?url";
+
+  onMount(() => {
+      import("@google/model-viewer"); // cannot be ssr'd
+  });
+</script>
+
+# tomotoru
+
+![question mark:not-prose object-contain absolute z-10 size-10 bottom-9 left-38]({melody})
+
+> トモトル
+
+a quick background story, tomotoru is a cute little mobile game where you'd be able to look after some sanrio characters, get nice lil outfits for them, and play small little mini games with them. on the 30th of september, 2019 [the website](https://web.archive.org/web/20181223131659/https://www.tomotoru.com/) and game was shutdown with a [public notice](https://web.archive.org/web/20260112012600/https://pdf.irpocket.com/C3810/Uxy1/hVa1/n5rx.pdf) with seemingly no way to keep any purchased content or progress. any attempt to open the game now will try connect to a server that doesn't exist anymore.
+
+for me i kept seeing screenshots of this game (especially of my melody) as a profile picture of one of my friends and one day it just nerd sniped me and i got curious to know which game it came from.
+
+## so what can we do
+
+i didn't plan to try and re-enable the game in any sort of capacity, but the art and assets from the game is what people have fallen in love with to where it's still many people profiles, gifs, emotes, etc. so let's see if we can preserve the art.
+
+**let's grave rob tomotoru's assets.**
+
+## the technicals and how i went about this
+
+> if you just want to see what i managed to recover and preserve and not interested in code or nerd stuff, [jump to here](#the-results)
+
+since this is a mobile game, the easiest place to start is with the [android apk](https://archive.org/details/com.cyberstep.sanriocharacters) and gives us a trove of options for reverse engineering.
+
+the 2 main tools i started with was `apktool` and `jadx`. since android apps are just zip files with sprinkles i wanted to just get a high level overview of the structure. for a game there wasn't a lot of java code which makes sense. most of the java was just some form of loading and init for a game engine but i started by looking into the assets and resources.
+
+### the `sxr` format
+
+in the assets folder was this structure of `sxr` files.
+
+```
+assets/sxr
+├── 0-0111.sxr
+├── 1-011b.sxr
+├── 5-0109.sxr
+├── 6-0100.sxr
+├── 7-010d.sxr
+├── 9-0101.sxr
+├── a-0108.sxr
+├── b-010c.sxr
+├── main.sxr
+├── pkg.json
+└── version
+```
+
+considering the whole app was only ~70mb and these files took up ~60mb, it was a safe assumption that this was the actual game itself and `sxr` was some kind of packaging/bundling.
+
+> i won't mention them again but, the `pkg.json` and `version` files are pretty irrelevant. just repeating some of the information we can already gather out of looking at the file structure.
+
+running `file` on any of the files just produced `data` as the format so some more actual digging was going to be needed. i started with `binwalk` to see if the data was "just there".
+
+```
+dotmrjosh@laptop tomotoru_re % binwalk -a decomp/resources/assets/sxr/0-0111.sxr
+
+              /Users/dotmrjosh/Dev/tomotoru_re/decomp/resources/assets/sxr/0-0111.sxr
+------------------------------------------------------------------------------
+DECIMAL                 HEXADECIMAL               DESCRIPTION
+------------------------------------------------------------------------------
+...
+412032                  0x64980                   Zlib compressed file, total 
+                                                  size: 50243 bytes
+462288                  0x70DD0                   Zlib compressed file, total 
+                                                  size: 6566 bytes
+493648                  0x78850                   PNG image, total size: 6864 
+                                                  bytes
+501376                  0x7A680                   PNG image, total size: 8859 
+                                                  bytes
+...
+------------------------------------------------------------------------------
+
+Analyzed 1 file for 85 file signatures (196 magic patterns) in 41.0 milliseconds
+```
+
+and we could find some results! lot's of images and `zlib` compressed items, but there was no guarantee these were correct as `binwalk` is just checking for magic byte headers. opening an `sxr` in imhex showed that there was some consistent binary pattern.
+
+```hex
+0-0111.sxr
+Hex View  00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F
+ 
+00000000  53 58 52 20 44 45 46 4C  26 46 00 00 00 00 00 B5  SXR DEFL&F......
+00000010  EA 90 00 00 90 26 01 00  00 00 00 00 00 00 00 00  .....&..........
+```
+
+at a glance, i was able to tell `sxr` files had a fairly consistent set of magic bytes and a header space of some kind. i threw it at chatgpt a bit but while i waited for it to poke around and experiment in finding some patterns, i was going to tackle it from a different angle.
+
+### an entry into `libsakanagl.so`
+
+looking back into the java area of the apk, it seemed to make a lot of native calls to something with the key word being sakana. there was also a shared library named `libsakanagl.so`. a guess is that it means the "sakana graphics library" which asking a friend sakana means fish in japanese so we have found "the fish graphics library"!
+
+
+```java
+private static native void skinit(String str, String str2, String str3, String str4, String str5);
+public static native int skloop(int i);
+public static native boolean skmain(int i, SakanaView sakanaView, String[] strArr);
+public static native int sknew();
+public static native boolean skchecksxr(int i, String str, int i2);
+```
+
+the one native call in java that piqued my interest was `skchecksxr` since that sounded like it would be a clear path to understanding how the sakana engine would load the `sxr` files. this is where i loaded up `libsakanagl.so` into ghidra.
+
+right away since this was using the [java native interface](https://en.wikipedia.org/wiki/Java_Native_Interface) (or JNI for short and going forward) ghidra was able to find all the functions with said names so i was able to jump to the `skchecksxr` method as it was already labeled `Java_ls_sakana_SakanaView_skchecksxr`.
+
+
+### finding the game engine
+
+before just trying to bruteforce my way through following every possible sub function that `skchecksxr` calls, i like to look through all the strings ghidra can find and see where they're used. some key strings started to stick out:
+
+```
+Address             Length      String
+00000000004F5F6C	00000020	sxrlist
+00000000004F5FAC	00000020	sxrname
+00000000004F60B4	00000017	mainsxrpath not found\n
+00000000004F60CB	00000012	sxr open failure\n
+00000000004F619A	0000001A	sxrlist.type != SS_ARRAY\n
+00000000004F61B4	0000001E	sxrPackageCheck missing sxr.\n
+00000000004F61D2	00000015	sxrPackageCheck OK.\n
+00000000004FDB8C	00000028	SxrEntity
+00000000004FDBD8	00000054	SxrFile is finalized
+00000000004FDC74	00000020	SxrFile
+00000000004FDD98	0000003C	SxrFileBuilder
+00000000004FF4F4	0000000E	11SSSxrEntity
+00000000004FF504	0000000B	9SSSxrFile
+00000000004FF510	00000013	16SSSxrFileBuilder
+000000000050479C	0000009C	sxr entity is crypted or compressed...
+00000000005079EC	00000048	sxr file deleted.
+0000000000507A34	0000004C	sxr file modified.
+0000000000507A80	00000058	SxrFileBuilder %S %S\n
+```
+
+reading the strings and following where ghidra had found them being used i was able to figured out the following:
+
+- `sxr` files consist of `entities` (the files within the bundle).
+- `sxr` entities can be encrypted or compressed (but we already knew about the compression from `binwalk`).
+- this is a full game engine with an interpreter, not just a graphics library.
+
+that last point you can't really tell by just reading the strings list above, but if you follow the string `sxrlist.type != SS_ARRAY\n` you can find the string `SS_ARRAY` being used on it's own elsewhere and you find a much larger list of `SS_*` strings:
+
+- `SS_INTEGER`
+- `SS_FLOAT`
+- `SS_BOOL`
+- `SS_NULL`
+- `SS_UNDEFINED`
+- `SS_POINTER`
+- `SS_STRING`
+- `SS_FUNCPROTO`
+- `SS_WEAKREF`
+- `SS_TABLE`
+- `SS_ARRAY`
+- `SS_CLOSURE`
+- `SS_NATIVECLOSURE`
+- `SS_THREAD`
+- `SS_CLASS`
+- `SS_INSTANCE`
+
+this seems like a "type" enum of some kind and all the types being described here would make sense to be part of a language. giving some of this code to chatgpt it thinks it to be [squirrel lang](http://www.squirrel-lang.org/) which i can believe. though this is getting a bit distracted from the actual `sxr` unpacking goal.
+
+### finding a structure
+
+after some running around ghidra and crawling through functions i finally came across the magic byte check for the `sxr` files:
+
+```c
+// where 0x20525853 was " RXS" so some kind of endianness conversion was occurring
+if (*puVar3 != 0x20525853) {
+  FUN_00195930(param_2,L"File header mismatch");
+  goto ...;
+}
+
+// same thing where 0x4c464544 was "LFED"
+if (puVar3[1] != 0x4c464544) {
+  FUN_00195930(param_2,L"Crypter string mismatch");
+  goto ...;
+}
+
+// 0x2646 being &F, interestingly the endianness seems to be "correct"? probably due to the weird concat
+if (CONCAT11(*(undefined1 *)((int)puVar3 + iVar12), *(undefined1 *)((int)puVar3 + iVar15)) != 0x2646) {
+  FUN_00195930(param_2,L"Magic code mismatch");
+  goto ...;
+}
+```
+
+> i've refactored the ghidra code into guard style instead of `if/else` otherwise it gets messy to read but the logic is still the same.
+
+a common pattern and thing i kept seeing come up across all parts of the engine code and `sxr` format was endianness always needing to be converted or mixed. for the most part everything was big endian but there were times something was little or little but converted to big. for the most part this weirdness was only within the engine and the `sxr` format was consistent but still strange.
+
+> for those unfamiliar, [endianness](https://en.wikipedia.org/wiki/Endianness) refers to what order bytes are in for values. think of big vs little like writing left to right vs right to left.
+
+with the check logic found, i was narrowing down exactly what the unpacking logic and creating a header structure. with a bit of work and comparing between files i figured out the following:
+
+```zig
+pub const Header = struct {
+    trailer_offset: u64, // could actually be 2 u32s, with the second being the offset
+    trailer_length: u32,
+    flags: [42]u8 = [42]u8{
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    },
+};
+```
+
+after passing the magic bytes, there was a consistent section of "some offset from 0", "some size", and a large area of usually 0s (i'm guessing reserved space for flags that was never used). quickly it was easy to figure out this was specifying a final section of the file that would have some key data of some kind (thus labeled a trailer). the offset and length perfectly jumped to and fit the end of every file i had available which helped confirm the header structure.
+
+### breaking the first layer
+
+here is where i ran into the first issue. the trailer was encrypted in some way. putting just the trailer into imhex and doing an entropy analysis showed significantly high enough values to confirm it was. i say encryption but since the game is able to launch in an emulator (albeit do nothing but display a network error) i assumed that it wasn't anything too intense and more a means of obfuscation. after working through ghidra i came to the following block of code:
+
+```c
+v4 = file_path_struct_ptr->field138_0x9c ^ (int)(v7 << 0x10) >> 0x1f ^ 0x75bcff3;
+v4 = v4 ^ v4 << 0xb;
+v4 = v4 ^ v4 >> 8 ^ 0x549139a;
+v5 = file_path_struct_ptr->field137_0x98 ^ v7 << 0x10 ^ 0x3bec56ae;
+v5 = v5 ^ v5 << 0xb;
+v9 = (int)(v7 + 3) >> 2;
+v7 = v5 ^ v5 >> 8 ^ v4;
+v10 = v7 ^ v4 >> 0x13;
+v5 = v10 ^ 0x8e415c26;
+v7 = v5 ^ v7 >> 0x13;
+sxr_file_data = sxr_file_data_clone;
+v5 = v7 ^ v5 >> 0x13 ^ 0x4d9d5bb8;
+do { v6 = v7;
+  v4 = v4 ^ v4 << 0xb;
+  v9 = v9 + -1;
+  v8 = v5 ^ v4 ^ v4 >> 8 ^ v5 >> 0x13;
+  *sxr_file_data = v8 ^ *sxr_file_data;
+  sxr_file_data = sxr_file_data + 1;
+  v7 = v5;
+  v4 = v10;
+  v5 = v8;
+  v10 = v6;
+} while (v9 != 0);
+```
+
+some of the variables i was able to make sense of what they were for and give them better names, but it's still a mess of code to try and parse. this is where chatgpt was actually really helpful and was able to find the important parts to make good guesses in extracting out the actual logic needed. after some cleaning up and fixing some issues from the rough script it had produced in python, i ported it over to zig to produce the following:
+
+```zig
+pub fn decodeTrailer(header: Header, trailer: []u8) !void {
+    if (header.trailer_length != trailer.len) return error.MismatchHeaderLength;
+
+    var state_a: u32 = undefined;
+    var state_b: u32 = undefined;
+    var state_c: u32 = undefined;
+    var state_d: u32 = undefined;
+    var prev_c: u32 = undefined;
+    var keystream: u32 = undefined;
+    var keystream_parts: [4]u8 = undefined;
+
+    const offset_lo: u32 = @truncate(header.trailer_offset & 0xffffffff);
+    const offset_hi: u32 = @truncate(header.trailer_offset >> 32);
+
+    const signmask: u32 = if (((header.trailer_length << 16) & 0x80000000) != 0) 0xffffffff else 0;
+
+    state_a = offset_hi ^ signmask ^ 0x075bcff3;
+    state_a ^= state_a << 11;
+    state_a ^= (state_a >> 8) ^ 0x0549139a;
+
+    state_b = offset_lo ^ (header.trailer_length << 16) ^ 0x3bec56ae;
+    state_b ^= state_b << 11;
+
+    state_c = state_b ^ (state_b >> 8) ^ state_a;
+    state_d = state_c ^ (state_a >> 19);
+    state_b = state_d ^ 0x8E415C26;
+    state_c = state_b ^ (state_c >> 19);
+    state_b = state_c ^ (state_b >> 19) ^ 0x4D9D5BB8;
+
+    const words: usize = (header.trailer_length + 3) / 4;
+    for (0..words) |word_index| {
+        prev_c = state_c;
+        state_a = state_a ^ (state_a << 11);
+        keystream = state_b ^ state_a ^ (state_a >> 8) ^ (state_b >> 19);
+
+        std.mem.writeInt(u32, &keystream_parts, keystream, .little);
+
+        const base = word_index * 4;
+        for (keystream_parts, 0..) |part, i| {
+            const trailer_index = base + i;
+            if (trailer_index >= trailer.len) break;
+            trailer[trailer_index] ^= part;
+        }
+
+        state_c = state_b;
+        state_a = state_d;
+        state_b = keystream;
+        state_d = prev_c;
+    }
+}
+```
+
+with this working and the entropy down and patterns visibly emerging in imhex, we could now start to actually parse the trailer.
+
+### understanding entities
+
+the trailer was reasonably straight forward to get an initial grasp on. it just started with a `u16` that specified the size of some data, then that data, then it repeats. size, data. the data part took a bit to decipher but eventually i got to this structure:
+
+
+```zig
+pub const Compression = enum(u8) {
+    none = 0b0000,
+    zlib = 0b0110,
+    lz4 = 0b1010,
+};
+
+const TrailerDataBlock = struct {
+    child_count: u16,
+    name_length: u16,
+    name: []const u8,
+    unk_a: [8]u8, // unknown? never affected the ability to extract data
+    data_offset: u64, // offset from the root of the sxr file
+    data_size: u32,
+    encrypted: bool,
+    compression: Compression,
+    decompressed_size: u32,
+};
+```
+
+this started producing a lot of files consistently and i could pull out exactly files without missing or skipping any areas. the `child_count` seemed to be used for some kind of nesting/folder structure, where if `child_count > 0` then there was no data and every entity after that one would be a child to that entity. i didn't bother implementing logic to reproduce the folder structure as i was just interested in preserving the art and assets but was good to know it was there.
+
+obviously though there being an encrypted flag spelled for more trouble and had me calling for ghidra again since the trailer decryption algorithm wasn't working on entities. this time i wasn't so lucky in getting such a clear to understand algorithm for decrypting entity data. this was the entity decryption logic i found (after i was able to rename some variables):
+
+```c
+v15 = bytes_remaining + 3;
+v16 = (137 * LODWORD(entity[1].compressed_size)) ^ entity->qword18->dword30 ^ 0xC413A951;
+v17 = v16 ^ (v16 << 11) ^ ((v16 ^ (v16 << 11)) >> 8);
+v18 = v17 >> 19;
+v19 = v17 ^ 0xDCB47C50;
+v20 = *(_DWORD **)entity_dst->buf;
+v21 = (v17 >> 19) ^ v17 ^ 0x52F53BE0;
+v22 = v18 ^ v21 ^ 0x4D9D51E6;
+v23 = (unsigned int)(v15 >> 2);
+v24 = -592156730;
+do
+{
+  v25 = v24 ^ (v24 << 11);
+  v24 = v19;
+  v19 = v21;
+  v21 = v22;
+  v22 ^= v25 ^ (v25 >> 8) ^ (v22 >> 19);
+  --v23;
+  *v20++ ^= v22;
+}
+while ( v23 );
+```
+
+everything here isn't too hard to start putting together like the last time, but the problems lie in this 1 struct:
+
+```c
+entity->qword18->dword30
+
+// before adding the struct syntax, it looking like this
+*(uint *)(*(int *)(param_1 + 0xc) + 0x1c)
+```
+
+this 1 value was a key requirement in deriving the seed for the XOR algorithm to decrypt the entity data. and it took me a few days before i was able to find how this value was defined. going back and forth with chatgpt to rubber duck things and test theories, we finally found that this value was an [fowler–noll–vo](https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function) hash of the entity name.
+
+> the discovery you just read in 1 sentence took ~2-3 days of just staring at that same function and following random gibberish...
+
+with this final piece solved i was able to create the following implementation:
+
+```zig
+pub fn decryptEntity(name: []const u8, payload: []u8) void {
+    if (payload.len == 0) return;
+
+    const stored_size: u32 = @intCast(payload.len);
+    const key32: u32 = std.hash.Fnv1a_32.hash(name);
+
+    const seed: u32 = (@as(u32, 137) *% stored_size) ^ key32 ^ 0xC413A951;
+
+    const t: u32 = seed ^ (seed << 11);
+    const v31: u32 = t ^ (t >> 8);
+
+    var v32: u32 = v31 ^ (v31 >> 19) ^ 0x52F53BE0;
+    var v34: u32 = v31 ^ 0xDCB47C50;
+    var v35: u32 = (v31 >> 19) ^ v32 ^ 0x4D9D51E6;
+    var v36: u32 = 0xDCB467C6;
+
+    const nwords: usize = (payload.len + 3) / 4;
+    var i: usize = 0;
+    while (i < nwords) : (i += 1) {
+        const base: usize = i * 4;
+        const rem: usize = payload.len - base;
+        const take: usize = if (rem >= 4) 4 else rem;
+
+        var word: u32 = 0;
+        if (take == 4) {
+            const p4: *const [4]u8 = @ptrCast(payload[base .. base + 4].ptr);
+            word = std.mem.readInt(u32, p4, .little);
+        } else {
+            var tmp: [4]u8 = .{ 0, 0, 0, 0 };
+            std.mem.copyForwards(u8, tmp[0..take], payload[base .. base + take]);
+            word = std.mem.readInt(u32, &tmp, .little);
+        }
+
+        const x: u32 = v36 ^ (v36 << 11);
+        const ks: u32 = v35 ^ x ^ (x >> 8) ^ (v35 >> 19);
+
+        word ^= ks;
+
+        v36 = v34;
+        v34 = v32;
+        v32 = v35;
+        v35 = ks;
+
+        var out: [4]u8 = undefined;
+        std.mem.writeInt(u32, &out, word, .little);
+        std.mem.copyForwards(u8, payload[base .. base + take], out[0..take]);
+    }
+}
+```
+
+> i was a bit exhausted from staring at ghidra for days so this decrypt function is a bit more vibe coded that i'd like but it does the job.
+
+with this last piece finally in place, i could extract everything* and start to actually browse through the assets and see if there's anything that could be preserved.
+
+### modeling smdl
+
+some magic bytes i kept seeing pop up was `SMDL` and running these files through the `strings` tool i was getting some promising values:
+
+```
+face
+m_smile
+m_move
+e_defL
+e_defR
+e_close
+e_angryL
+e_angryR
+m_laugh
+e_sadL
+e_sadR
+tearL
+tearR
+cheek
+m_itimonji
+m_perori
+m_angry
+m_mogu
+m_bikkuri
+m_akubi
+m_awateru
+```
+
+if you've ever done some 3d modeling before, you recognise these as names for [shape keys](https://docs.blender.org/manual/en/latest/animation/shape_keys/introduction.html). doing some googling around there was no existing way i could find to parse these files so i created a custom parser that would create a minimal `obj` mesh from the vertex positions it could extract.
+
+the smdl file format is still pretty unknown to me and is structed more like a stream of blocks rather than "here's a list of offset and sizes". you can checkout the [parse function](https://github.com/dotmrjosh/fishing_rod/blob/2bf8909b586fdd8c9c52b8ab887acba8ab97da94/src/smdl/Smdl.zig#L34) for getting to specific areas of the function but here i'll just talk about parsing a block within the smdl.
+
+the smdl format is made up of blocks where each block is defined a type, a format, and count (basically a byte size if you multiply it by the format).
+
+the format is a bit complicated and not quite consistent in my implementation but i've documented it as being comprised of 2 parts:
+
+- a bit size
+- a components count
+
+the components are the important part as they define how many of the bit size there are. i pictured it like the following examples:
+
+> a component count of 3 and bit size of 32 would produce 3 32bit values and could be thought of as a `Vector3(32)` if pseudo coded in game engine like syntax.
+
+there are exceptions to this. but i implemented it like so:
+
+```zig
+// this is tossing the whole block data by multiplying by count
+if (components == 4) {
+    // for some reason 4 components always means a bitsize of 8 regardless of what was provided
+    // similar to an RGBA value
+    smdl_reader.toss(count * components);
+} else {
+    switch (bitsize) {
+        .u32 => smdl_reader.toss(count * 4 * components),
+        .u16 => smdl_reader.toss(count * 2 * components),
+    }
+}
+```
+
+once you know how big the block data is and what format it's in, you can then use the type to determine what's being stored. so far i've only noted that `type == 1` means "a block of vertex positions". so i was able to gather a models positions and load them into an obj and i was starting to see some shapes! but i needed the actual triangle index buffer (or as i will call TIB from here on) to start producing faces.
+
+i would've thought one of the blocks would have the TIB but for some reason it didn't. even more frustrating is that once all the blocks had been read, there was a decent chunk of data still left over at the end of the file. it was good in the sense that the TIB was probably in this trailer but it was another header i needed to decode. thankfully it wasn't too complicated to get.
+
+there was a `u32` of 0s that always seemed like padding, followed by 9 bytes of unknown flags, then a `u32` that counted how many indices there were. so dividing the count by 3 gave me how many faces there were and i was able to read forward to get collect the TIB. there was still a bit of data left over in some files but i never got into figuring out exactly what it was. my guess is that it was shape key/morph data but a mystery to solve another day.
+
+## [the results](#the-results)
+
+it's time to finally show what all this work has produced! i was really hoping to be able to find the full character models and create a little photo booth app you could use to pose the characters and see the assets and art in scenes but i was only able to recover partial bits of assets (where the rest i believe would be downloaded).
+
+### models
+
+here are some of the 3d models i was able to convert to obj files (and then to glb with blender). they don't have their textures applied but they do exist and just needs some work to be applied.
+
+<div class="flex flex-wrap justify-center">
+    <model-viewer class="not-prose w-70 max-md:w-full" src={faceA} environment-image={environment} ar camera-controls shadow-intesity="1"></model-viewer>
+    <model-viewer class="not-prose w-70 max-md:w-full" src={faceB} environment-image={environment} ar camera-controls shadow-intesity="1"></model-viewer>
+    <model-viewer class="not-prose w-70 max-md:w-full" src={faceC} environment-image={environment} ar camera-controls shadow-intesity="1"></model-viewer>
+</div>
+<model-viewer class="not-prose inline-block h-70 w-full md:h-140" src={room} environment-image={environment} ar camera-controls shadow-intesity="1"></model-viewer>
+
+### images
+
+here are some image assets i thought looked good to share but there are literally 100s of textures and sprites you can extract.
+
+![bubbleQuestion:not-prose inline]({bubbleQuestion})
+![cinnamoroll:not-prose inline]({cinnamoroll})
+![kitty:not-prose inline]({kitty})
+![melody:not-prose inline]({melody})
+
+### fishing rod
+
+since the game engine was called "sakana" (meaning fish) i figured the tool i write to extract everything would fit the name "fishing rod". you can checkout the project to build and run it yourself on [gitlab](https://gitlab.com/dotmrjosh/fishing_rod/), [github](https://github.com/dotmrjosh/fishing_rod/), and [codeberg](https://codeberg.org/dotmrjosh/fishing_rod).
+
+## if you want to help
+
+if you still have this game installed on your phone from a time when it was running, feel free to reach out on my socials or feel free to open an issue on [github](https://github.com/dotmrjosh/fishing_rod/issues/new). android would be the easiest to work with but still keen to try if you also have it on iOS.
+
+----
+
+**a small reflection**
+
+after a rough end to last year, this project has been really fulfilling. it had a good start and end, i learnt a lot, and it reminded me how much i love programming and working on things like this. am keen to share the next project soon;

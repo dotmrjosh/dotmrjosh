@@ -4,3 +4,7 @@
 @theme {
   --default-font-family: "Gabarito Variable", system-ui;
 }
+
+html {
+  scroll-behavior: smooth;
+}

@@ -30,6 +30,11 @@
     "vite": "^7.2.2"
   },
   "dependencies": {
-    "@fontsource-variable/gabarito": "^5.2.8"
+    "@fontsource-variable/gabarito": "^5.2.8",
+    "@google/model-viewer": "^4.1.0",
+    "mdast-util-to-string": "^4.0.0",
+    "three": "^0.182.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0"
   }
 }
