@@ -2,11 +2,20 @@ import type { PageLoad } from "./$types";
 import type { PostModule } from "$lib/blog";
 import { error } from "@sveltejs/kit";
 
-export const load: PageLoad = async ({ params }) => {
-  const post = await (import(/* @vite-ignore */ `/src/blog/${params.slug}/post.mdx`).catch((err) => err) as Promise<PostModule | Error>);
+const posts = import.meta.glob<PostModule>("/src/blog/*/post.mdx", { eager: true });
+const entries = Object.entries(posts)
+  .map(([path, post]) => {
+    const slug = path.split("/").at(-2)!;
+    return [
+      slug,
+      post,
+    ] as const
+  });
 
-  if (post instanceof Error) {
-    console.log(post);
+export const load: PageLoad = async ({ params }) => {
+  const post = entries.find(([slug]) => slug == params.slug)?.[1];
+
+  if (!post) {
     error(404, "post not found");
   }
 
